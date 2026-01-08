@@ -1,0 +1,47 @@
+name: Build Mac App
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install Dependencies
+      run: |
+        pip install customtkinter yt-dlp pyinstaller
+        
+    - name: Download Mac Engines
+      run: |
+        curl -L https://evermeet.cx/ffmpeg/ffmpeg-112023-g9b2a637500.zip -o ffmpeg.zip
+        unzip ffmpeg.zip
+        curl -L https://evermeet.cx/ffmpeg/ffprobe-112023-g9b2a637500.zip -o ffprobe.zip
+        unzip ffprobe.zip
+        chmod +x ffmpeg
+        chmod +x ffprobe
+        
+    - name: Build with PyInstaller
+      run: |
+        # 【注意】下面这行代码，我帮你改成 .pyw 了，要和你上传的文件名完全一致！
+        pyinstaller --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
+        
+    - name: Assemble Final Package
+      run: |
+        mv ffmpeg dist/MacDownloader/
+        mv ffprobe dist/MacDownloader/
+        
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Mac_App_v18
+        path: dist/MacDownloader/
