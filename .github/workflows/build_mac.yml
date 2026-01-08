@@ -7,18 +7,22 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # 【关键修改1】强制使用 macOS 13 (Intel)，这比最新的 M1 环境更稳定，且兼容性更好
+    runs-on: macos-13
     
     steps:
-    - uses: actions/checkout@v4 # 升级到了 v4
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v5 # 升级到了 v5
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        # 【关键修改2】升级到 Python 3.11，对 Mac 支持更好
+        python-version: '3.11' 
         
     - name: Install Dependencies
       run: |
+        # 升级 pip 以防止安装依赖时出错
+        python -m pip install --upgrade pip
         pip install customtkinter yt-dlp pyinstaller
         
     - name: Download Mac Engines
@@ -32,8 +36,9 @@ jobs:
         
     - name: Build with PyInstaller
       run: |
-        # 依然保持你的 .pyw 文件名
-        pyinstaller --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
+        # 【关键修改3】增加了 --clean 参数清理缓存，防止内存溢出
+        # 你的文件名 download_mac.pyw 保持不变
+        pyinstaller --clean --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
         
     - name: Assemble Final Package
       run: |
@@ -41,8 +46,7 @@ jobs:
         mv ffprobe dist/MacDownloader/
         
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4 # 【关键修改】这里改成了 v4
+      uses: actions/upload-artifact@v4
       with:
-        name: Mac_App_v18
+        name: Mac_App_v18_Intel
         path: dist/MacDownloader/
-        # v4 版本默认开启压缩，这里不需要额外设置
