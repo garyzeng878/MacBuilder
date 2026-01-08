@@ -24,23 +24,28 @@ jobs:
     - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
-        # 强制更新 setuptools，防止打包出错
-        pip install --upgrade setuptools wheel
         pip install customtkinter yt-dlp "pillow<11.0.0" pyinstaller
         
-    - name: Check Python Code Syntax (Debug Step)
+    - name: Find and Build .pyw File (Auto-Detect)
       run: |
-        # 【新增步骤】先检查代码有没有语法错误
-        # 如果这里报错，说明是你上传的 download_mac.pyw 代码里面写错了
-        python -m py_compile download_mac.pyw
-        echo "Code syntax is OK!"
+        # 【核心逻辑】自动寻找当前目录下的 .pyw 文件
+        # 无论你叫 download.pyw 还是 MacDownloader.pyw，它都能找到
         
-    - name: Build with PyInstaller
-      run: |
-        # 【核心修改】去掉了 --windowed 参数
-        # 这会生成一个通用的 Unix 可执行文件，避免云端打包时的签名崩溃问题
-        # 功能完全一样，只是图标可能不是通用的 App 图标，但绝对能用
-        pyinstaller --clean --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
+        FILE_NAME=$(ls *.pyw | head -n 1)
+        
+        if [ -z "$FILE_NAME" ]; then
+          echo "❌ 错误: 找不到任何 .pyw 文件！请检查你有没有上传文件，或者后缀名是不是 .pyw"
+          ls -R # 列出所有文件帮你看一眼
+          exit 1
+        else
+          echo "✅ 找到了文件: $FILE_NAME，开始打包..."
+          
+          # 开始打包
+          pyinstaller --clean --noconsole --onedir \
+            --name="MacDownloader" \
+            --collect-all customtkinter \
+            "$FILE_NAME"
+        fi
         
     - name: Download Mac Engines
       run: |
@@ -58,5 +63,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Mac_App_v23_Debug
+        name: Mac_App_v24_Auto
         path: dist/MacDownloader/
