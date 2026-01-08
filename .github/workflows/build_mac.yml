@@ -43,3 +43,20 @@ jobs:
         pyinstaller --clean --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
         
     - name: Download Mac Engines
+      run: |
+        curl -L https://evermeet.cx/ffmpeg/ffmpeg-6.0.zip -o ffmpeg.zip
+        unzip -o ffmpeg.zip
+        curl -L https://evermeet.cx/ffmpeg/ffprobe-6.0.zip -o ffprobe.zip
+        unzip -o ffprobe.zip
+        
+        chmod +x ffmpeg
+        chmod +x ffprobe
+        
+        mv ffmpeg dist/MacDownloader/
+        mv ffprobe dist/MacDownloader/
+        
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mac_App_v23_Debug
+        path: dist/MacDownloader/
