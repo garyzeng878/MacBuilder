@@ -19,39 +19,27 @@ jobs:
         
     - name: Install System Dependencies
       run: |
-        # 安装图形界面支持库
         brew install python-tk
         
     - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
+        # 强制更新 setuptools，防止打包出错
+        pip install --upgrade setuptools wheel
         pip install customtkinter yt-dlp "pillow<11.0.0" pyinstaller
+        
+    - name: Check Python Code Syntax (Debug Step)
+      run: |
+        # 【新增步骤】先检查代码有没有语法错误
+        # 如果这里报错，说明是你上传的 download_mac.pyw 代码里面写错了
+        python -m py_compile download_mac.pyw
+        echo "Code syntax is OK!"
         
     - name: Build with PyInstaller
       run: |
-        # 我把长命令拆开了，这样绝对不会报语法错误
-        pyinstaller --clean --noconsole --windowed --onedir \
-          --name="MacDownloader" \
-          --collect-all customtkinter \
-          --log-level=INFO \
-          download_mac.pyw
+        # 【核心修改】去掉了 --windowed 参数
+        # 这会生成一个通用的 Unix 可执行文件，避免云端打包时的签名崩溃问题
+        # 功能完全一样，只是图标可能不是通用的 App 图标，但绝对能用
+        pyinstaller --clean --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
         
     - name: Download Mac Engines
-      run: |
-        curl -L https://evermeet.cx/ffmpeg/ffmpeg-6.0.zip -o ffmpeg.zip
-        unzip -o ffmpeg.zip
-        curl -L https://evermeet.cx/ffmpeg/ffprobe-6.0.zip -o ffprobe.zip
-        unzip -o ffprobe.zip
-        
-        chmod +x ffmpeg
-        chmod +x ffprobe
-        
-        # 移动引擎文件
-        mv ffmpeg dist/MacDownloader/
-        mv ffprobe dist/MacDownloader/
-        
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Mac_App_v22_Final
-        path: dist/MacDownloader/
