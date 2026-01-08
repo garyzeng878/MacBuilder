@@ -7,8 +7,8 @@ on:
 
 jobs:
   build:
-    # 【关键修改1】强制使用 macOS 13 (Intel)，这比最新的 M1 环境更稳定，且兼容性更好
-    runs-on: macos-13
+    # 【修改1】使用最新的 macos-latest (目前是 macOS 14/15 ARM64 架构)
+    runs-on: macos-latest
     
     steps:
     - uses: actions/checkout@v4
@@ -16,28 +16,29 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        # 【关键修改2】升级到 Python 3.11，对 Mac 支持更好
-        python-version: '3.11' 
+        python-version: '3.11'
         
     - name: Install Dependencies
       run: |
-        # 升级 pip 以防止安装依赖时出错
         python -m pip install --upgrade pip
         pip install customtkinter yt-dlp pyinstaller
         
     - name: Download Mac Engines
       run: |
-        curl -L https://evermeet.cx/ffmpeg/ffmpeg-112023-g9b2a637500.zip -o ffmpeg.zip
-        unzip ffmpeg.zip
-        curl -L https://evermeet.cx/ffmpeg/ffprobe-112023-g9b2a637500.zip -o ffprobe.zip
-        unzip ffprobe.zip
+        # 【修改2】使用通用的 FFmpeg 下载链接
+        # 注意：这里下载的是 Intel 版 FFmpeg。
+        # 在 M1/M2/M3 Mac 上，系统会自动通过 Rosetta 运行它，完全兼容。
+        curl -L https://evermeet.cx/ffmpeg/ffmpeg-6.0.zip -o ffmpeg.zip
+        unzip -o ffmpeg.zip
+        curl -L https://evermeet.cx/ffmpeg/ffprobe-6.0.zip -o ffprobe.zip
+        unzip -o ffprobe.zip
         chmod +x ffmpeg
         chmod +x ffprobe
         
     - name: Build with PyInstaller
       run: |
-        # 【关键修改3】增加了 --clean 参数清理缓存，防止内存溢出
-        # 你的文件名 download_mac.pyw 保持不变
+        # 【修改3】增加 --clean 清理缓存，防止报错
+        # 确保这里的文件名是 download_mac.pyw
         pyinstaller --clean --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
         
     - name: Assemble Final Package
@@ -48,5 +49,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Mac_App_v18_Intel
+        name: Mac_App_v19_Silicon
         path: dist/MacDownloader/
