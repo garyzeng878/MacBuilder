@@ -15,40 +15,26 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        # 【核心修复】降级到 3.10，这个版本对 PyInstaller + Mac 的支持最稳定
         python-version: '3.10' 
+        # 3.10 是目前兼容性最好的版本，不要改
         
-    - name: Install Dependencies
+    - name: Install System Dependencies (Fix Exit Code 1)
+      run: |
+        # 【核心修复】GitHub的Mac环境默认没有图形库，必须手动安装！
+        # 没有这一步，PyInstaller 找不到 tk 库就会直接报错退出
+        brew install python-tk
+        
+    - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
-        # 安装特定版本的 pyinstaller 以避免最新版的 bug
-        pip install customtkinter yt-dlp "pyinstaller>=6.0.0"
+        # 强制安装特定版本的 pillow，防止新版不兼容导致报错
+        pip install customtkinter yt-dlp "pillow<11.0.0" pyinstaller
         
-    - name: Build with PyInstaller
+    - name: Build with PyInstaller (Verbose)
       run: |
-        # 我们先进行打包，确保这里没有干扰
-        # 你的文件名 download_mac.pyw 保持不变
-        pyinstaller --clean --noconsole --onedir --name="MacDownloader" --collect-all customtkinter download_mac.pyw
+        # 增加 --log-level=INFO 以便万一出错能看到具体原因
+        # 增加 --windowed 明确告诉它是窗口程序
+        pyinstaller --clean --noconsole --windowed --onedir --name="MacDownloader" --collect-all customtkinter --log-level=INFO download_mac.pyw
         
     - name: Download Mac Engines
-      run: |
-        # 打包完成后，再下载引擎，放入 dist 文件夹
-        # 这里下载的是通用的 64位 FFmpeg，M1/M2/Intel Mac 都能通过 Rosetta 运行
-        curl -L https://evermeet.cx/ffmpeg/ffmpeg-6.0.zip -o ffmpeg.zip
-        unzip -o ffmpeg.zip
-        curl -L https://evermeet.cx/ffmpeg/ffprobe-6.0.zip -o ffprobe.zip
-        unzip -o ffprobe.zip
-        
-        # 赋予权限
-        chmod +x ffmpeg
-        chmod +x ffprobe
-        
-        # 移动到成品文件夹
-        mv ffmpeg dist/MacDownloader/
-        mv ffprobe dist/MacDownloader/
-        
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Mac_App_v20_Stable
-        path: dist/MacDownloader/
+      run
